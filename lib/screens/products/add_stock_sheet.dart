@@ -80,34 +80,60 @@ class _AddStockSheetState extends State<AddStockSheet> {
         miktar = int.tryParse(_miktarController.text.trim()) ?? 1;
       }
 
-      await _apiService.cihazEkle(
-        urunid: widget.urun.id,
-        serino: sn?.isNotEmpty == true ? sn : null,
-        miktar: miktar,
-        lokasyon: _lokasyonController.text.trim(),
-        alimtarihi: _alimTarihiController.text.trim(),
-        ureticigarantibitis: _ureticiGarantiController.text.trim(),
-        bizimgarantibitis: _bizimGarantiController.text.trim(),
-        ureticibarkod: _ureticiBarkodController.text.trim(),
-        bizimbarkod: _bizimBarkodController.text.trim(),
-      );
+      int basariliEkleme = 0;
+      String? lastError;
+
+      for (int i = 0; i < miktar; i++) {
+        try {
+          String? currentBizimBarkod = _bizimBarkodController.text.trim();
+          String? currentUreticiBarkod = _ureticiBarkodController.text.trim();
+          
+          if (i > 0) {
+            if (currentBizimBarkod.isNotEmpty) currentBizimBarkod = '$currentBizimBarkod-$i';
+            if (currentUreticiBarkod.isNotEmpty) currentUreticiBarkod = '$currentUreticiBarkod-$i';
+          }
+
+          await _apiService.cihazEkle(
+            urunid: widget.urun.id,
+            serino: sn?.isNotEmpty == true ? sn : null,
+            miktar: 1, // Her bir cihaz için ayrı kayıt oluşturur
+            lokasyon: _lokasyonController.text.trim(),
+            alimtarihi: _alimTarihiController.text.trim(),
+            ureticigarantibitis: _ureticiGarantiController.text.trim(),
+            bizimgarantibitis: _bizimGarantiController.text.trim(),
+            ureticibarkod: currentUreticiBarkod,
+            bizimbarkod: currentBizimBarkod,
+          );
+          basariliEkleme++;
+          
+          // Sunucunun üst üste gelen hızlı istekleri engellememesi için bekleme süresi
+          await Future.delayed(const Duration(milliseconds: 500));
+        } catch (e) {
+          lastError = e is ApiException ? e.message : 'Bilinmeyen bir hata oluştu ($e)';
+          break; // İlk hatada döngüyü durdur
+        }
+      }
 
       if (!mounted) return;
-      SnackBarUtils.showTopSnackBar(
-        context,
-        'Stok başarıyla eklendi!',
-        icon: Icons.check_circle_rounded,
-      );
       
-      Navigator.of(context).pop();
-      widget.onStockAdded(miktar);
-    } on ApiException catch (e) {
-      if (!mounted) return;
-      SnackBarUtils.showTopSnackBar(
-        context,
-        e.message,
-        isError: true,
-      );
+      if (basariliEkleme > 0) {
+        SnackBarUtils.showTopSnackBar(
+          context,
+          lastError != null 
+              ? '$basariliEkleme adet eklendi fakat sonrakilerde hata çıktı: $lastError'
+              : '$basariliEkleme adet stok başarıyla eklendi!',
+          icon: lastError != null ? Icons.warning_amber_rounded : Icons.check_circle_rounded,
+          isError: lastError != null,
+        );
+        Navigator.of(context).pop();
+        widget.onStockAdded(basariliEkleme);
+      } else {
+        SnackBarUtils.showTopSnackBar(
+          context,
+          lastError ?? 'Stok eklenemedi',
+          isError: true,
+        );
+      }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }

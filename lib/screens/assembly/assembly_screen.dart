@@ -98,34 +98,39 @@ class _AssemblyScreenState extends State<AssemblyScreen> {
   }
 
   Future<void> _sokMontaj(MontajModel montaj) async {
-    final confirmed = await showCupertinoDialog<bool>(
+    final int? selectedStatus = await showCupertinoModalPopup<int>(
       context: context,
-      builder: (context) => CupertinoAlertDialog(
+      builder: (context) => CupertinoActionSheet(
         title: const Text('Bileşeni Sök'),
-        content: Text(
-          '${montaj.bilesenurunad ?? 'Bileşen'} (SN: ${montaj.displayBilesenSeriNo}) parçasını sökmek istediğinize emin misiniz?',
+        message: Text(
+          '${montaj.bilesenurunad ?? 'Bileşen'} (SN: ${montaj.displayBilesenSeriNo}) parçasını söküyorsunuz. Sökülen parçanın yeni durumu ne olsun?',
         ),
         actions: [
-          CupertinoDialogAction(
-            child: const Text('İptal'),
-            onPressed: () => Navigator.pop(context, false),
+          CupertinoActionSheetAction(
+            onPressed: () => Navigator.pop(context, 1),
+            child: const Text('Sök ve Stoğa Ekle (Müsait)'),
           ),
-          CupertinoDialogAction(
+          CupertinoActionSheetAction(
             isDestructiveAction: true,
-            child: const Text('Sök'),
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(context, 4),
+            child: const Text('Sök ve Hurdaya Ayır'),
           ),
         ],
+        cancelButton: CupertinoActionSheetAction(
+          isDefaultAction: true,
+          onPressed: () => Navigator.pop(context, null),
+          child: const Text('İptal'),
+        ),
       ),
     );
 
-    if (confirmed != true) return;
+    if (selectedStatus == null) return;
 
     setState(() => _isLoading = true);
     try {
       await _apiService.montajSok(
         bilesencihazid: montaj.bilesencihazid,
-        yenicihazdurumu: 1, // Sökülünce Müsait (1) duruma döner
+        yenicihazdurumu: selectedStatus,
       );
       await _loadData(); // Yenile
     } catch (e) {

@@ -6,7 +6,7 @@ import '../../models/cihaz_model.dart';
 import '../../services/api_service.dart';
 import '../../core/utils/snackbar_utils.dart';
 import 'add_stock_sheet.dart';
-
+import 'edit_device_sheet.dart';
 /// Ürün detay ve düzenleme tam ekran sayfa'i.
 /// Katalog bilgileri + cihaz detaylarını bir arada gösterir.
 class ProductDetailScreen extends StatefulWidget {
@@ -395,6 +395,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    IconButton(
+                      onPressed: () => _showEditDeviceSheet(cihaz),
+                      icon: Icon(Icons.edit_outlined, size: 20, color: AppTheme.primaryColor(context)),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      tooltip: 'Cihazı Düzenle',
+                    ),
+                    const SizedBox(width: 8),
                     PopupMenuButton<int>(
                       tooltip: 'Durumu Değiştir',
                       icon: Icon(Icons.edit_note_rounded, size: 24, color: AppTheme.textSecondary(context)),
@@ -943,6 +951,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         );
       }
     }
+  }
+
+  void _showEditDeviceSheet(CihazModel cihaz) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => EditDeviceSheet(
+        cihaz: cihaz,
+        onDeviceUpdated: () {
+          _loadCihazlar();
+        },
+      ),
+    );
   }
 
   Future<void> _confirmDeleteCihaz(CihazModel cihaz) async {
