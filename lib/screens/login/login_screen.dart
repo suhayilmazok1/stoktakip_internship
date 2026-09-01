@@ -313,7 +313,7 @@ class _LoginScreenState extends State<LoginScreen>
               ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Kullanıcı adı gerekli';
+                  return 'Kullanici adı gerekli';
                 }
                 return null;
               },
